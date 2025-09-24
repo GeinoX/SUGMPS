@@ -14,12 +14,13 @@ class AuthService {
     required String schoolEmail,
     required String otherEmail,
     required String matricule,
+    required int phone,
     required String password,
     required String gender,
     File? profileImage,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/register');
+      final uri = Uri.parse('$baseUrl/umsapp/students/register/');
 
       http.Response response;
 
@@ -29,7 +30,7 @@ class AuthService {
 
         request.fields['name'] = name;
         request.fields['school_email'] = schoolEmail;
-        request.fields['other_email'] = otherEmail;
+        request.fields['email'] = otherEmail;
         request.fields['matricule'] = matricule;
         request.fields['password'] = password;
         request.fields['gender'] = gender;
@@ -48,9 +49,11 @@ class AuthService {
           body: json.encode({
             'name': name,
             'school_email': schoolEmail,
-            'other_email': otherEmail,
+            'email': otherEmail,
+            'phone': phone,
             'matricule': matricule,
             'password': password,
+            'profile_image': null,
             'gender': gender,
           }),
         );

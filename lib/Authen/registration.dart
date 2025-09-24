@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sugmps/routes.dart';
 import '../services/auth_service.dart';
+import 'package:flutter/services.dart';
 
 class Registration extends StatefulWidget {
   const Registration({super.key});
@@ -19,6 +20,7 @@ class _RegistrationState extends State<Registration> {
   final TextEditingController _schoolEmailController = TextEditingController();
   final TextEditingController _otherEmailController = TextEditingController();
   final TextEditingController _matriculeController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -28,6 +30,7 @@ class _RegistrationState extends State<Registration> {
   String? schoolEmail;
   String? otherEmail;
   String? matricule;
+  int? phone;
   String? password;
   String? confirmPassword;
   String? gender;
@@ -91,7 +94,7 @@ class _RegistrationState extends State<Registration> {
     setState(() => _isLoading = true);
 
     final authService = AuthService(
-      baseUrl: 'https://example.com/api',
+      baseUrl: 'https://3543a7355be5.ngrok-free.app',
     ); // Replace with your API URL
 
     try {
@@ -99,6 +102,7 @@ class _RegistrationState extends State<Registration> {
         name: name!,
         schoolEmail: schoolEmail!,
         otherEmail: otherEmail!,
+        phone: phone!,
         matricule: matricule!,
         password: password!,
         gender: gender!,
@@ -257,8 +261,8 @@ class _RegistrationState extends State<Registration> {
                     decoration: _inputDecoration("Select Gender", Icons.people),
                     value: gender,
                     items: const [
-                      DropdownMenuItem(value: "Male", child: Text("Male")),
-                      DropdownMenuItem(value: "Female", child: Text("Female")),
+                      DropdownMenuItem(value: "M", child: Text("M")),
+                      DropdownMenuItem(value: "F", child: Text("F")),
                       DropdownMenuItem(value: "Other", child: Text("Other")),
                     ],
                     onChanged: (value) => setState(() => gender = value),
@@ -266,6 +270,29 @@ class _RegistrationState extends State<Registration> {
                         (value) =>
                             value == null ? "Please choose gender" : null,
                   ),
+                  const SizedBox(height: 15),
+
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter
+                          .digitsOnly, // allow only numbers
+                    ],
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDecoration("Phone", Icons.contact_page),
+                    validator: (value) {
+                      if (value == null || value.isEmpty)
+                        return "Enter your contact";
+                      if (!RegExp(r'^\d{8,15}$').hasMatch(value)) {
+                        // adjust min/max digits as needed
+                        return "Enter a valid phone number";
+                      }
+                      return null;
+                    },
+                    onSaved: (value) => phone = int.tryParse(value ?? ''),
+                  ),
+
                   const SizedBox(height: 15),
 
                   // Password
