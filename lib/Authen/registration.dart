@@ -90,12 +90,19 @@ class _RegistrationState extends State<Registration> {
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (profileImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a profile image")),
+      );
+      return;
+    }
+
     _formKey.currentState!.save();
     setState(() => _isLoading = true);
 
     final authService = AuthService(
-      baseUrl: 'https://3543a7355be5.ngrok-free.app',
-    ); // Replace with your API URL
+      baseUrl: 'https://2574fc5179bd.ngrok-free.app', // remove space!
+    );
 
     try {
       final result = await authService.register(
@@ -106,18 +113,16 @@ class _RegistrationState extends State<Registration> {
         matricule: matricule!,
         password: password!,
         gender: gender!,
-        profileImage: profileImage,
+        profileImage: profileImage!, // safe now
       );
 
       if (!mounted) return;
-      // Success
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Registration successful!')));
       Navigator.pushNamed(context, AppRoutes.login);
     } catch (e) {
       if (!mounted) return;
-      // Error
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));

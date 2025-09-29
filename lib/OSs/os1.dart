@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'styles.dart';
 import 'package:sugmps/routes.dart';
 
@@ -10,90 +11,155 @@ class OS1 extends StatefulWidget {
 }
 
 class _OS1State extends State<OS1> {
+  final PageController _pageController = PageController();
+  int _pageIndex = 0; // track current page
   bool _imagesPrecached = false;
+  bool _showOnboarding = true; // controls whether to show onboarding
+
+  final List<Map<String, String>> _pages = [
+    {'image': AppImages.image1, 'title': AppText.title1, 'text': AppText.text1},
+    {'image': AppImages.image2, 'title': AppText.title2, 'text': AppText.text2},
+    {'image': AppImages.image3, 'title': AppText.title3, 'text': AppText.text3},
+    {'image': AppImages.image4, 'title': AppText.title4, 'text': AppText.text4},
+    {'image': AppImages.image5, 'title': AppText.title5, 'text': AppText.text5},
+    {'image': AppImages.image6, 'title': AppText.title6, 'text': AppText.text6},
+  ];
+
+
+
+  void _completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('seenOnboarding', true);
+
+    // Navigate to the next screen
+    Navigator.pushReplacementNamed(context, AppRoutes.usertype);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
     if (!_imagesPrecached) {
-      precacheImage(const AssetImage(AppImages.image1), context);
-      precacheImage(const AssetImage(AppImages.image2), context);
-      precacheImage(const AssetImage(AppImages.image3), context);
-      precacheImage(const AssetImage(AppImages.image4), context);
-      precacheImage(const AssetImage(AppImages.image5), context);
-      precacheImage(const AssetImage(AppImages.image6), context);
-
-      _imagesPrecached = true; // to avoid precaching multiple times
+      for (var page in _pages) {
+        precacheImage(AssetImage(page['image']!), context);
+      }
+      _imagesPrecached = true;
     }
+  }
+
+  void _nextPage() {
+    if (_pageIndex < _pages.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _completeOnboarding();
+    }
+  }
+
+  Widget _dot(int index) {
+    return Container(
+      width: _pageIndex == index ? 12 : 8,
+      height: _pageIndex == index ? 12 : 8,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _pageIndex == index ? Colors.blue : Colors.grey.shade400,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Padding(
-        padding: const EdgeInsets.all(AppSizing.edgeinsets),
-        child: Column(
-          children: [
-            const SizedBox(height: AppSizing.fsb),
-            Image.asset(AppImages.image1, height: 350, width: 300),
-            const SizedBox(height: AppSizing.ssb),
-            const Text(
-              AppText.title1,
-              style: TextStyle(
-                color: AppColors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 19,
-              ),
+      body: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (i) => setState(() => _pageIndex = i),
+              itemCount: _pages.length,
+              itemBuilder: (context, index) {
+                final page = _pages[index];
+                return _OS_Super(
+                  image: page['image']!,
+                  title: page['title']!,
+                  text: page['text']!,
+                );
+              },
             ),
-            const SizedBox(height: AppSizing.tsb),
-            Text(
-              AppText.text1,
-              style: TextStyle(
-                color: AppColors.whiteWithOpacity60,
-                fontWeight: FontWeight.normal,
-                fontSize: AppSizing.textfont,
-              ),
+          ),
+          // Dots + Next button
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [for (int i = 0; i < _pages.length; i++) _dot(i)],
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _nextPage,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _pageIndex < _pages.length - 1 ? "Next" : "Get Started",
+                    style: const TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: AppSizing.ftsb),
-            Container(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE77B22), Color.fromARGB(255, 20, 3, 119)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.os2),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 125,
-                    vertical: 15,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  "Next",
-                  style: TextStyle(fontSize: 20, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+Widget _OS_Super({
+  required String image,
+  required String title,
+  required String text,
+}) {
+  return Padding(
+    padding: const EdgeInsets.all(AppSizing.edgeinsets),
+    child: Column(
+      children: [
+        const SizedBox(height: AppSizing.fsb),
+        Image.asset(image, height: 350, width: 300),
+        const SizedBox(height: AppSizing.ssb),
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 19,
+          ),
+        ),
+        const SizedBox(height: AppSizing.tsb),
+        Text(
+          text,
+          style: TextStyle(
+            color: AppColors.whiteWithOpacity60,
+            fontWeight: FontWeight.normal,
+            fontSize: AppSizing.textfont,
+          ),
+        ),
+      ],
+    ),
+  );
 }

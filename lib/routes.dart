@@ -9,4 +9,6 @@ class AppRoutes {
   static const String usertype = "/usertype";
   static const String registration = "/reg";
   static const String login = "/login";
+  static const String homepage = "/homepage";
+  static const String coursepage = "/coursepage";
 }

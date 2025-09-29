@@ -1,58 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sugmps/Authen/login.dart';
 import 'package:sugmps/Authen/registration.dart';
+import 'package:sugmps/MSs/Courses/course_page.dart';
 import 'package:sugmps/usertype.dart';
 import 'routes.dart';
 import 'OSs/styles.dart';
 import 'OSs/os1.dart';
-import 'OSs/os2.dart';
-import 'OSs/os3.dart';
-import 'OSs/os4.dart';
-import 'OSs/os5.dart';
-import 'OSs/os6.dart';
+import 'services/auth_service.dart';
+import 'utils/jwt_helper.dart';
+import 'MSs/homepage.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Make status bar consistent
   SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
+    const SystemUiOverlayStyle(
       statusBarColor: AppColors.background,
       statusBarIconBrightness: Brightness.light,
     ),
   );
 
-  runApp(const MyApp());
+  final prefs = await SharedPreferences.getInstance();
+  final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+
+  String startPage = AppRoutes.login; // default
+
+  final accessToken = prefs.getString('accessToken');
+  final refreshToken = prefs.getString('refreshToken');
+
+  if (accessToken != null && refreshToken != null) {
+    if (!JwtHelper.isExpired(accessToken)) {
+      startPage = AppRoutes.homepage;
+    } else {
+      // ✅ Try refreshing if expired
+      try {
+        final authService = AuthService(
+          baseUrl: 'https://501235fca008.ngrok-free.app',
+        );
+        final newTokens = await authService.refresh(refreshToken);
+
+        await prefs.setString('accessToken', newTokens['access']);
+        await prefs.setString('refreshToken', newTokens['refresh']);
+
+        startPage = AppRoutes.homepage;
+      } catch (_) {
+        startPage = AppRoutes.login;
+      }
+    }
+  }
+
+  runApp(MyApp(seenOnboarding: seenOnboarding, startPage: startPage));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool seenOnboarding;
+  final String startPage;
+
+  const MyApp({
+    super.key,
+    required this.seenOnboarding,
+    required this.startPage,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.os1,
+      // ✅ Show OS1 only once if onboarding not seen
+      home: seenOnboarding ? _getStartPage(startPage) : const OS1(),
       onGenerateRoute: (settings) {
         WidgetBuilder builder;
         switch (settings.name) {
           case AppRoutes.os1:
             builder = (_) => const OS1();
-            break;
-          case AppRoutes.os2:
-            builder = (_) => const OS2();
-            break;
-          case AppRoutes.os3:
-            builder = (_) => const OS3();
-            break;
-          case AppRoutes.os4:
-            builder = (_) => const OS4();
-            break;
-          case AppRoutes.os5:
-            builder = (_) => const OS5();
-            break;
-          case AppRoutes.os6:
-            builder = (_) => const OS6();
             break;
           case AppRoutes.usertype:
             builder = (_) => const UserType();
@@ -62,6 +85,12 @@ class MyApp extends StatelessWidget {
             break;
           case AppRoutes.login:
             builder = (_) => const Login();
+            break;
+          case AppRoutes.homepage:
+            builder = (_) => const Homepage();
+            break;
+          case AppRoutes.coursepage:
+            builder = (_) => const Coursepage();
             break;
           default:
             throw Exception('Invalid route: ${settings.name}');
@@ -75,5 +104,16 @@ class MyApp extends StatelessWidget {
         );
       },
     );
+  }
+
+  Widget _getStartPage(String route) {
+    switch (route) {
+      case AppRoutes.login:
+        return const Login();
+      case AppRoutes.homepage:
+        return const Homepage();
+      default:
+        return const Login();
+    }
   }
 }

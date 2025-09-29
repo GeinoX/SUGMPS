@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sugmps/routes.dart';
+import '../services/auth_service.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -13,13 +15,9 @@ class _LoginState extends State<Login> {
 
   final TextEditingController _matriculeController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
 
   String? matricule;
   String? password;
-  String? username;
-  String? phone;
 
   // Gradient for icons
   static const _iconGradient = LinearGradient(
@@ -32,8 +30,6 @@ class _LoginState extends State<Login> {
   void dispose() {
     _matriculeController.dispose();
     _passwordController.dispose();
-    _usernameController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -59,16 +55,33 @@ class _LoginState extends State<Login> {
     );
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+  // Updated login function
+  void _login() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      debugPrint("Matricule: $matricule");
-      debugPrint("Password: $password");
-      debugPrint("Username: $username");
-      debugPrint("Phone: $phone");
+    _formKey.currentState!.save();
 
-      Navigator.pushNamed(context, AppRoutes.os1);
+    try {
+      final authService = AuthService(
+        baseUrl: 'https://2574fc5179bd.ngrok-free.app',
+      );
+      final data = await authService.login(
+        schoolEmail: matricule!,
+        password: password!,
+      );
+
+      // Store access and refresh tokens
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('accessToken', data['access']);
+      await prefs.setString('refreshToken', data['refresh']);
+
+      // Redirect to main/dashboard page
+      Navigator.pushReplacementNamed(context, AppRoutes.homepage);
+    } catch (e) {
+      // Show error to user
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
     }
   }
 
@@ -105,24 +118,19 @@ class _LoginState extends State<Login> {
                     ),
                   ),
                   const SizedBox(height: 25),
-
                   // Matricule input
                   TextFormField(
                     controller: _matriculeController,
                     style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Matricule Number",
-                      Icons.badge,
-                    ),
+                    decoration: _inputDecoration("School Email", Icons.badge),
                     validator:
                         (value) =>
                             value == null || value.isEmpty
-                                ? "Enter matricule"
+                                ? "Enter email"
                                 : null,
                     onSaved: (value) => matricule = value,
                   ),
                   const SizedBox(height: 15),
-
                   // Password input
                   TextFormField(
                     controller: _passwordController,
@@ -140,33 +148,7 @@ class _LoginState extends State<Login> {
                     },
                     onSaved: (value) => password = value,
                   ),
-                  const SizedBox(height: 15),
-
-                  // Optional Username input
-                  TextFormField(
-                    controller: _usernameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Username (optional)",
-                      Icons.person,
-                    ),
-                    onSaved: (value) => username = value,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Optional Phone number input
-                  TextFormField(
-                    controller: _phoneController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Phone Number (optional)",
-                      Icons.phone,
-                    ),
-                    keyboardType: TextInputType.phone,
-                    onSaved: (value) => phone = value,
-                  ),
                   const SizedBox(height: 25),
-
                   ElevatedButton(
                     onPressed: _login,
                     style: ElevatedButton.styleFrom(
@@ -185,6 +167,29 @@ class _LoginState extends State<Login> {
                       "Login",
                       style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Don't have an account? Register
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Don’t have an account? ",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, AppRoutes.registration);
+                        },
+                        child: const Text(
+                          "Register",
+                          style: TextStyle(
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
