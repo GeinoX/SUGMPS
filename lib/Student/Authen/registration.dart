@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sugmps/routes.dart';
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 import 'package:flutter/services.dart';
 
 class Registration extends StatefulWidget {
@@ -24,6 +24,8 @@ class _RegistrationState extends State<Registration> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  final TextEditingController _programController =
+      TextEditingController(); // NEW
 
   // Input variables
   String? name;
@@ -34,6 +36,7 @@ class _RegistrationState extends State<Registration> {
   String? password;
   String? confirmPassword;
   String? gender;
+  String? program; // NEW
   File? profileImage;
 
   final ImagePicker _picker = ImagePicker();
@@ -53,6 +56,7 @@ class _RegistrationState extends State<Registration> {
     _matriculeController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _programController.dispose(); // NEW
     super.dispose();
   }
 
@@ -100,9 +104,7 @@ class _RegistrationState extends State<Registration> {
     _formKey.currentState!.save();
     setState(() => _isLoading = true);
 
-    final authService = AuthService(
-      baseUrl: 'https://2574fc5179bd.ngrok-free.app', // remove space!
-    );
+    final authService = AuthService(baseUrl: AppRoutes.url);
 
     try {
       final result = await authService.register(
@@ -113,7 +115,8 @@ class _RegistrationState extends State<Registration> {
         matricule: matricule!,
         password: password!,
         gender: gender!,
-        profileImage: profileImage!, // safe now
+        program: program!, // NEW
+        profileImage: profileImage!,
       );
 
       if (!mounted) return;
@@ -259,6 +262,20 @@ class _RegistrationState extends State<Registration> {
                   ),
                   const SizedBox(height: 15),
 
+                  // Program Field (NEW)
+                  TextFormField(
+                    controller: _programController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDecoration("Program", Icons.school),
+                    validator:
+                        (value) =>
+                            value == null || value.isEmpty
+                                ? "Enter your program"
+                                : null,
+                    onSaved: (value) => program = value,
+                  ),
+                  const SizedBox(height: 15),
+
                   // Gender Dropdown
                   DropdownButtonFormField<String>(
                     dropdownColor: const Color(0xFF2A2A2A),
@@ -280,17 +297,13 @@ class _RegistrationState extends State<Registration> {
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    inputFormatters: [
-                      FilteringTextInputFormatter
-                          .digitsOnly, // allow only numbers
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     style: const TextStyle(color: Colors.white),
                     decoration: _inputDecoration("Phone", Icons.contact_page),
                     validator: (value) {
                       if (value == null || value.isEmpty)
                         return "Enter your contact";
                       if (!RegExp(r'^\d{8,15}$').hasMatch(value)) {
-                        // adjust min/max digits as needed
                         return "Enter a valid phone number";
                       }
                       return null;

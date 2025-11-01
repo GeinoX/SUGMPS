@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugmps/Authen/login.dart';
-import 'package:sugmps/Authen/registration.dart';
-import 'package:sugmps/MSs/Courses/course_page.dart';
+import 'package:sugmps/Student/Authen/login.dart';
+import 'package:sugmps/Student/Authen/registration.dart';
+import 'package:sugmps/Student/MSs/Attendance/course_display.dart';
+import 'package:sugmps/Student/MSs/Courses/course_page.dart';
+import 'package:sugmps/Student/MSs/homepage.dart';
+import 'package:sugmps/Student/MSs/notifications/bulletin.dart';
+import 'package:sugmps/Student/MSs/timetable.dart';
 import 'package:sugmps/usertype.dart';
+import 'package:sugmps/utils/teacher_course_adapter.dart';
 import 'routes.dart';
 import 'OSs/styles.dart';
 import 'OSs/os1.dart';
 import 'services/auth_service.dart';
 import 'utils/jwt_helper.dart';
-import 'MSs/homepage.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:sugmps/utils/course_adapter.dart';
+import 'package:sugmps/utils/attendancetemp_adapter.dart';
+import 'package:sugmps/utils/notification_adapter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +32,32 @@ Future<void> main() async {
     ),
   );
 
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Register adapters safely (avoids double registration)
+  if (!Hive.isAdapterRegistered(CourseAdapter().typeId)) {
+    Hive.registerAdapter(CourseAdapter());
+  }
+  if (!Hive.isAdapterRegistered(AttendanceAdapter().typeId)) {
+    Hive.registerAdapter(AttendanceAdapter());
+  }
+
+  if (!Hive.isAdapterRegistered(NotificationModelAdapter().typeId)) {
+    Hive.registerAdapter(NotificationModelAdapter());
+  }
+
+  if (!Hive.isAdapterRegistered(TeacherCourseAdapter().typeId)) {
+    Hive.registerAdapter(TeacherCourseAdapter());
+  }
+
+  // Open boxes
+  await Hive.openBox<Course>('courses');
+  await Hive.openBox<Attendance>('attendance');
+  await Hive.openBox<NotificationModel>('notifications');
+  await Hive.openBox<TeacherCourse>('teacher_courses');
+
+  // Check onboarding
   final prefs = await SharedPreferences.getInstance();
   final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
 
@@ -31,11 +66,11 @@ Future<void> main() async {
   final accessToken = prefs.getString('accessToken');
   final refreshToken = prefs.getString('refreshToken');
 
+  // Token check & refresh
   if (accessToken != null && refreshToken != null) {
     if (!JwtHelper.isExpired(accessToken)) {
       startPage = AppRoutes.homepage;
     } else {
-      // ✅ Try refreshing if expired
       try {
         final authService = AuthService(
           baseUrl: 'https://501235fca008.ngrok-free.app',
@@ -45,7 +80,7 @@ Future<void> main() async {
         await prefs.setString('accessToken', newTokens['access']);
         await prefs.setString('refreshToken', newTokens['refresh']);
 
-        startPage = AppRoutes.homepage;
+        startPage = AppRoutes.teacherhomepage;
       } catch (_) {
         startPage = AppRoutes.login;
       }
@@ -69,7 +104,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // ✅ Show OS1 only once if onboarding not seen
       home: seenOnboarding ? _getStartPage(startPage) : const OS1(),
       onGenerateRoute: (settings) {
         WidgetBuilder builder;
@@ -92,6 +126,16 @@ class MyApp extends StatelessWidget {
           case AppRoutes.coursepage:
             builder = (_) => const Coursepage();
             break;
+          case AppRoutes.coursedisplay:
+            builder = (_) => const CourseListPage();
+            break;
+          case AppRoutes.notifications:
+            builder = (_) => const NotificationsPage();
+            break;
+          case AppRoutes.timetablepage:
+            builder = (_) => const TimetablePage();
+            break;
+
           default:
             throw Exception('Invalid route: ${settings.name}');
         }

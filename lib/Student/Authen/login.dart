@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sugmps/routes.dart';
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -62,9 +62,7 @@ class _LoginState extends State<Login> {
     _formKey.currentState!.save();
 
     try {
-      final authService = AuthService(
-        baseUrl: 'https://2574fc5179bd.ngrok-free.app',
-      );
+      final authService = AuthService(baseUrl: AppRoutes.url);
       final data = await authService.login(
         schoolEmail: matricule!,
         password: password!,

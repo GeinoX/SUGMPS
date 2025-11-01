@@ -104,6 +104,11 @@ class _UserTypeState extends State<UserType> {
                               : () {
                                 if (_selectedUserType == "student") {
                                   Navigator.pushNamed(context, AppRoutes.login);
+                                } else if (_selectedUserType == "teacher") {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.teacherlogin,
+                                  );
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

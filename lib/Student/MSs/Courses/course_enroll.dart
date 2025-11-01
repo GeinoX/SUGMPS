@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:sugmps/routes.dart';
 
 class CourseListPage extends StatelessWidget {
   final List<dynamic> courses;
@@ -24,7 +25,7 @@ class CourseListPage extends StatelessWidget {
     }
 
     final url = Uri.parse(
-      'https://2574fc5179bd.ngrok-free.app/umsapp/enroll',
+      '${AppRoutes.url}/umsapp/enroll',
     ); // Replace with your API endpoint
     final body = jsonEncode({'course_name': courseId});
 

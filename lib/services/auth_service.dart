@@ -17,6 +17,7 @@ class AuthService {
     required int phone,
     required String password,
     required String gender,
+    required String program, // NEW
     required File profileImage, // make it required
   }) async {
     try {
@@ -32,6 +33,7 @@ class AuthService {
       request.fields['phone'] = phone.toString();
       request.fields['password'] = password;
       request.fields['gender'] = gender;
+      request.fields['program'] = program; // NEW
 
       request.files.add(
         await http.MultipartFile.fromPath('profile_image', profileImage.path),
@@ -65,7 +67,7 @@ class AuthService {
       final response = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'school_email': schoolEmail, 'password': password}),
+        body: json.encode({'email': schoolEmail, 'password': password}),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

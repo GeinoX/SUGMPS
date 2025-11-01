@@ -8,7 +8,16 @@ class AppRoutes {
 
   static const String usertype = "/usertype";
   static const String registration = "/reg";
+  static const String teacherregistration = "/teacherregistration";
+  static const String teacherlogin = "/teacherlogin";
   static const String login = "/login";
   static const String homepage = "/homepage";
   static const String coursepage = "/coursepage";
+  static const String coursedisplay = "/coursediplay";
+  static const String teacherhomepage = "/teacherhomepage";
+  static const String notifications = '/notifications';
+  static const String teachercoursespage = '/teachercoursespage';
+  static const String timetablepage = 'timetablepage';
+  static const String url = 'https://c7948645019d.ngrok-free.app';
+  static const String socketurl = 'ca2789c00d84.ngrok-free.app';
 }
