@@ -89,7 +89,7 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> refresh(String refreshToken) async {
-    final uri = Uri.parse('$baseUrl/umsapp/students/token/refresh/');
+    final uri = Uri.parse('$baseUrl/umsapp/token/refresh/');
     final response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},

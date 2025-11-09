@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sugmps/Student/Authen/login.dart';
 import 'package:sugmps/Student/Authen/registration.dart';
+import 'package:sugmps/Student/MSs/Attendance/Studattpage.dart';
 import 'package:sugmps/Student/MSs/Attendance/course_display.dart';
 import 'package:sugmps/Student/MSs/Courses/course_page.dart';
 import 'package:sugmps/Student/MSs/homepage.dart';
@@ -72,9 +73,7 @@ Future<void> main() async {
       startPage = AppRoutes.homepage;
     } else {
       try {
-        final authService = AuthService(
-          baseUrl: 'https://501235fca008.ngrok-free.app',
-        );
+        final authService = AuthService(baseUrl: AppRoutes.url);
         final newTokens = await authService.refresh(refreshToken);
 
         await prefs.setString('accessToken', newTokens['access']);

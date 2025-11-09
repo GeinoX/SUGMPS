@@ -20,6 +20,7 @@ class ApiService {
       throw Exception("Failed to load courses: ${response.statusCode}");
     }
   }
+
 }
 
 Future<void> fetchAttendance(
@@ -48,3 +49,4 @@ Future<void> fetchAttendance(
     throw Exception("Failed to load attendance");
   }
 }
+

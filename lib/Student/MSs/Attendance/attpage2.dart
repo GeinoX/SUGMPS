@@ -44,12 +44,35 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
   bool _broadcasting = false;
   String? _broadcastingSessionId; // which session we are broadcasting
 
+  // Friend addition feature
+  final List<TextEditingController> _friendControllers = [
+    TextEditingController(),
+    TextEditingController(),
+  ];
+  final List<FocusNode> _friendFocusNodes = [FocusNode(), FocusNode()];
+
   late Box<Map> _localBox; // single box; entries include courseId
 
   @override
   void initState() {
     super.initState();
     _initHiveAndLoad();
+  }
+
+  @override
+  void dispose() {
+    _scanSub?.cancel();
+    _scanTimer?.cancel();
+    FlutterBluePlus.stopScan();
+    _stopBroadcast();
+    // Dispose controllers and focus nodes
+    for (var controller in _friendControllers) {
+      controller.dispose();
+    }
+    for (var focusNode in _friendFocusNodes) {
+      focusNode.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _initHiveAndLoad() async {
@@ -59,11 +82,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     setState(() => _statusMessage = 'Ready to scan');
   }
 
-  /* This function is responsible for
-1. Clearing the detedted list so that new data can be loaded to avoid duplicates or mixing data.
-2. Looping through the hive box local storage to get data for a specific course by filtering data whose "course_id", is equivalent to the "widget.course_id"
-3. Updates the list with new data for that course
-4. Sort session according to the most recent */
   void _loadLocalSessionsForCourse() {
     _detected.clear();
     for (final entry in _localBox.values) {
@@ -110,20 +128,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
   Future<void> _removeLocal(String sessionId) async {
     await _localBox.delete(sessionId);
   }
-
-  @override
-  void dispose() {
-    _scanSub?.cancel();
-    _scanTimer?.cancel();
-    FlutterBluePlus.stopScan();
-    _stopBroadcast();
-    super.dispose();
-  }
-  /* Starts scanning for nearby BLE devices that are broadcasting specific data (attendance sessions).
-Extracts session IDs from the broadcasted advertisement data.
-Updates or adds these sessions to the _detected list.
-Saves them locally for persistence.
-Automatically stops scanning after a set duration. */
 
   Future<void> _startScan() async {
     setState(() {
@@ -203,8 +207,6 @@ Automatically stops scanning after a set duration. */
     _scanTimer = Timer(const Duration(seconds: 9), _stopScanNow);
   }
 
-
-
   void _stopScanNow() async {
     await FlutterBluePlus.stopScan();
     _scanSub?.cancel();
@@ -215,10 +217,18 @@ Automatically stops scanning after a set duration. */
     });
   }
 
-  // -------------------- SUBMIT (check-in) --------------------
-  Future<void> _submitCheckIn(String sessionId) async {
-    final uri = Uri.parse('$baseUrl/umsapp/check_in/');
-    final payload = {'session_id': sessionId, 'course_id': widget.courseId};
+  // -------------------- SUBMIT (check-in) with Friends --------------------
+  Future<void> _submitCheckIn(
+    String sessionId,
+    List<String> addedStudents,
+  ) async {
+    final uri = Uri.parse('$baseUrl/umsapp/attendance/check_in/');
+    final payload = {
+      "session_id": sessionId,
+      "course_id": widget.courseId,
+      "added_students": addedStudents, // Match your API field name
+    };
+
     try {
       final resp = await http.post(
         uri,
@@ -246,12 +256,146 @@ Automatically stops scanning after a set duration. */
           _broadcastingSessionId = sessionId;
         });
 
-        _showSnack('Attendance submitted successfully!');
+        // Clear friend inputs after successful submission
+        _clearFriendInputs();
+
+        _showSnack(
+          'Attendance submitted successfully! ${addedStudents.isNotEmpty ? 'Added students: ${addedStudents.join(", ")}' : ''}',
+        );
       } else {
         _showSnack('Server rejected submission (${resp.statusCode})');
       }
     } catch (e) {
       _showSnack('Network error: $e');
+    }
+  }
+
+  // -------------------- FRIEND INPUT DIALOG --------------------
+  Future<List<String>?> _showFriendInputDialog(String sessionId) async {
+    // Reset friend inputs
+    _clearFriendInputs();
+
+    return showDialog<List<String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Submit Attendance'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Session: ${_short(sessionId)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Add up to 2 students (optional):',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    // Student 1 input
+                    TextField(
+                      controller: _friendControllers[0],
+                      focusNode: _friendFocusNodes[0],
+                      decoration: const InputDecoration(
+                        labelText: 'Student 1 ID',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter student ID (e.g., STU002)',
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    // Student 2 input
+                    TextField(
+                      controller: _friendControllers[1],
+                      focusNode: _friendFocusNodes[1],
+                      decoration: const InputDecoration(
+                        labelText: 'Student 2 ID',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter student ID (e.g., STU003)',
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    if (_hasValidStudentInputs())
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Students to add: ${_getValidStudentIds().join(", ")}',
+                          style: const TextStyle(color: Colors.green),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Note: You can submit attendance without adding any students.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(null); // Cancel
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      _hasValidStudentInputs() || _allStudentInputsEmpty()
+                          ? () {
+                            final studentIds = _getValidStudentIds();
+                            Navigator.of(context).pop(studentIds);
+                          }
+                          : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentOrange,
+                  ),
+                  child: const Text('Submit Attendance'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  bool _hasValidStudentInputs() {
+    return _friendControllers.any(
+      (controller) => controller.text.trim().isNotEmpty,
+    );
+  }
+
+  bool _allStudentInputsEmpty() {
+    return _friendControllers.every(
+      (controller) => controller.text.trim().isEmpty,
+    );
+  }
+
+  List<String> _getValidStudentIds() {
+    return _friendControllers
+        .map((controller) => controller.text.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+  }
+
+  void _clearFriendInputs() {
+    for (var controller in _friendControllers) {
+      controller.clear();
     }
   }
 
@@ -267,6 +411,7 @@ Automatically stops scanning after a set duration. */
               ListTile(
                 leading: const Icon(Icons.check),
                 title: const Text('Submit attendance'),
+                subtitle: const Text('Add up to 2 other students'),
                 onTap: () => Navigator.pop(context, 'submit'),
               ),
               ListTile(
@@ -286,12 +431,15 @@ Automatically stops scanning after a set duration. */
     );
 
     if (choice == 'submit') {
-      final confirm = await _showConfirmDialog(
-        'Submit Attendance',
-        'Submit attendance for session ${_short(ds.sessionId)}?',
-      );
-      if (confirm == true) {
-        await _submitCheckIn(ds.sessionId);
+      final studentIds = await _showFriendInputDialog(ds.sessionId);
+      if (studentIds != null) {
+        final confirm = await _showConfirmDialog(
+          'Submit Attendance',
+          'Submit attendance for session ${_short(ds.sessionId)}${studentIds.isNotEmpty ? ' with ${studentIds.length} additional student(s)' : ''}?',
+        );
+        if (confirm == true) {
+          await _submitCheckIn(ds.sessionId, studentIds);
+        }
       }
     } else if (choice == 'delete') {
       final confirm = await _showConfirmDialog(
@@ -365,7 +513,6 @@ Automatically stops scanning after a set duration. */
       print(e);
     }
   }
-
 
   Future<void> _stopBroadcast() async {
     try {

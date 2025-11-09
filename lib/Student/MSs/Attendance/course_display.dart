@@ -117,7 +117,8 @@ class _CourseListPageState extends State<CourseListPage> {
           ),
         ],
       ),
-      body: ValueListenableBuilder<Box<Course>>(
+      body: 
+      ValueListenableBuilder<Box<Course>>(
         valueListenable: _box.listenable(),
         builder: (context, box, _) {
           final courses = box.values.toList().cast<Course>();
