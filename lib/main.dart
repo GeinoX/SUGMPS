@@ -67,21 +67,31 @@ Future<void> main() async {
 
   // Token check & refresh
   if (accessToken != null && refreshToken != null) {
+    final authService = AuthService(baseUrl: AppRoutes.url);
+
     if (!JwtHelper.isExpired(accessToken)) {
       startPage = AppRoutes.homepage;
     } else {
       try {
-        final authService = AuthService(baseUrl: AppRoutes.url);
         final newTokens = await authService.refresh(refreshToken);
 
+        // Store updated tokens
         await prefs.setString('accessToken', newTokens['access']);
-        await prefs.setString('refreshToken', newTokens['refresh']);
+        if (newTokens.containsKey('refresh')) {
+          await prefs.setString('refreshToken', newTokens['refresh']);
+        }
 
-        startPage = AppRoutes.teacherhomepage;
-      } catch (_) {
+        startPage = AppRoutes.homepage;
+      } catch (error) {
+        // Token refresh failed (refresh token expired or invalid)
+        await prefs.remove('accessToken');
+        await prefs.remove('refreshToken');
         startPage = AppRoutes.login;
       }
     }
+  } else {
+    // No tokens found — user not logged in
+    startPage = AppRoutes.login;
   }
 
   runApp(MyApp(seenOnboarding: seenOnboarding, startPage: startPage));
@@ -119,7 +129,7 @@ class MyApp extends StatelessWidget {
                 (_) =>
                     const MainNavigationWrapper(); // ✅ Changed to MainNavigationWrapper
             break;
-         
+
           case AppRoutes.timetablepage:
             builder = (_) => const TimetablePage();
             break;
