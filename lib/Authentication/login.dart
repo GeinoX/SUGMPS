@@ -12,19 +12,12 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController _matriculeController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   String? matricule;
   String? password;
-
-  // Gradient for icons
-  static const _iconGradient = LinearGradient(
-    colors: [Color(0xFFE77B22), Color.fromARGB(255, 20, 3, 119)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
 
   @override
   void dispose() {
@@ -33,33 +26,45 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(
+    String label,
+    IconData icon,
+    BuildContext context,
+  ) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white70),
-      prefixIcon: ShaderMask(
-        shaderCallback: (bounds) => _iconGradient.createShader(bounds),
-        child: Icon(icon, color: Colors.white),
+      labelStyle: TextStyle(
+        color: Colors.grey[600],
+        fontSize: MediaQuery.of(context).size.width * 0.04,
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: const Color(0xFF3C3889),
+        size: MediaQuery.of(context).size.width * 0.06,
       ),
       enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.white24),
-        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(12),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.blueAccent),
-        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF3C3889), width: 2),
+        borderRadius: BorderRadius.circular(12),
       ),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       filled: true,
-      fillColor: const Color(0xFF2A2A2A),
+      fillColor: Colors.white,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: MediaQuery.of(context).size.height * 0.02,
+      ),
     );
   }
 
-  // Updated login function
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     _formKey.currentState!.save();
+    setState(() => _isLoading = true);
 
     try {
       final authService = AuthService(baseUrl: AppRoutes.url);
@@ -68,128 +73,183 @@ class _LoginState extends State<Login> {
         password: password!,
       );
 
-      // Store access and refresh tokens
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('accessToken', data['access']);
       await prefs.setString('refreshToken', data['refresh']);
 
-      // Redirect to main/dashboard page
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.homepage);
     } catch (e) {
-      // Show error to user
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF202020),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            width: 330,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF252525),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10,
-                  offset: Offset(2, 2),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const Text(
-                    "Login",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 25,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                  // Matricule input
-                  TextFormField(
-                    controller: _matriculeController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("School Email", Icons.badge),
-                    validator:
-                        (value) =>
-                            value == null || value.isEmpty
-                                ? "Enter email"
-                                : null,
-                    onSaved: (value) => matricule = value,
-                  ),
-                  const SizedBox(height: 15),
-                  // Password input
-                  TextFormField(
-                    controller: _passwordController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("Password", Icons.lock),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Enter password";
-                      }
-                      if (value.length < 6) {
-                        return "Password must be at least 6 chars";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => password = value,
-                  ),
-                  const SizedBox(height: 25),
-                  ElevatedButton(
-                    onPressed: _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black.withOpacity(0.25),
-                      side: const BorderSide(color: Colors.black, width: 1),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 100,
-                        vertical: 15,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Don't have an account? Register
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Don’t have an account? ",
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, AppRoutes.registration);
-                        },
-                        child: const Text(
-                          "Register",
-                          style: TextStyle(
-                            color: Colors.blueAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              width: screenWidth * 0.9,
+              constraints: BoxConstraints(maxWidth: 400),
+              margin: EdgeInsets.all(screenWidth * 0.05),
+              padding: EdgeInsets.all(screenWidth * 0.06),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text(
+                      "Welcome Back",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.08,
+                        color: const Color(0xFF3C3889),
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.01),
+                    Text(
+                      "Sign in to continue",
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.04,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.04),
+
+                    // School Email input
+                    TextFormField(
+                      controller: _matriculeController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "School Email",
+                        Icons.email,
+                        context,
+                      ),
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? "Enter school email"
+                                  : null,
+                      onSaved: (value) => matricule = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Password input
+                    TextFormField(
+                      controller: _passwordController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Password",
+                        Icons.lock,
+                        context,
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Enter password";
+                        }
+                        if (value.length < 6) {
+                          return "Password must be at least 6 characters";
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => password = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.04),
+
+                    // Login Button
+                    SizedBox(
+                      width: double.infinity,
+                      child:
+                          _isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                                onPressed: _login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3C3889),
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: screenHeight * 0.02,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: Text(
+                                  "Login",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                    ),
+                    SizedBox(height: screenHeight * 0.03),
+
+                    // Register link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account? ",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: screenWidth * 0.035,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.registration,
+                            );
+                          },
+                          child: Text(
+                            "Register",
+                            style: TextStyle(
+                              color: const Color(0xFF3C3889),
+                              fontWeight: FontWeight.w600,
+                              fontSize: screenWidth * 0.035,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

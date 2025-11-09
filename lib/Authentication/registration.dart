@@ -14,8 +14,6 @@ class Registration extends StatefulWidget {
 
 class _RegistrationState extends State<Registration> {
   final _formKey = GlobalKey<FormState>();
-
-  // Controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _schoolEmailController = TextEditingController();
   final TextEditingController _otherEmailController = TextEditingController();
@@ -24,10 +22,8 @@ class _RegistrationState extends State<Registration> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-  final TextEditingController _programController =
-      TextEditingController(); // NEW
+  final TextEditingController _programController = TextEditingController();
 
-  // Input variables
   String? name;
   String? schoolEmail;
   String? otherEmail;
@@ -36,17 +32,11 @@ class _RegistrationState extends State<Registration> {
   String? password;
   String? confirmPassword;
   String? gender;
-  String? program; // NEW
+  String? program;
   File? profileImage;
 
   final ImagePicker _picker = ImagePicker();
-  bool _isLoading = false; // Loading state
-
-  static const _iconGradient = LinearGradient(
-    colors: [Color(0xFFE77B22), Color.fromARGB(128, 20, 3, 119)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -54,9 +44,10 @@ class _RegistrationState extends State<Registration> {
     _schoolEmailController.dispose();
     _otherEmailController.dispose();
     _matriculeController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _programController.dispose(); // NEW
+    _programController.dispose();
     super.dispose();
   }
 
@@ -69,25 +60,37 @@ class _RegistrationState extends State<Registration> {
     }
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(
+    String label,
+    IconData icon,
+    BuildContext context,
+  ) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white70),
-      prefixIcon: ShaderMask(
-        shaderCallback: (bounds) => _iconGradient.createShader(bounds),
-        child: Icon(icon, color: Colors.white),
+      labelStyle: TextStyle(
+        color: Colors.grey[600],
+        fontSize: MediaQuery.of(context).size.width * 0.04,
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: const Color(0xFF3C3889),
+        size: MediaQuery.of(context).size.width * 0.06,
       ),
       enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.white24),
-        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(12),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.blueAccent),
-        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF3C3889), width: 2),
+        borderRadius: BorderRadius.circular(12),
       ),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       filled: true,
-      fillColor: const Color(0xFF2A2A2A),
+      fillColor: Colors.white,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: MediaQuery.of(context).size.height * 0.02,
+      ),
     );
   }
 
@@ -96,7 +99,10 @@ class _RegistrationState extends State<Registration> {
 
     if (profileImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a profile image")),
+        const SnackBar(
+          content: Text("Please select a profile image"),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -107,7 +113,7 @@ class _RegistrationState extends State<Registration> {
     final authService = AuthService(baseUrl: AppRoutes.url);
 
     try {
-      final result = await authService.register(
+      await authService.register(
         name: name!,
         schoolEmail: schoolEmail!,
         otherEmail: otherEmail!,
@@ -115,20 +121,26 @@ class _RegistrationState extends State<Registration> {
         matricule: matricule!,
         password: password!,
         gender: gender!,
-        program: program!, // NEW
+        program: program!,
         profileImage: profileImage!,
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Registration successful!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registration successful!'),
+          backgroundColor: Colors.green,
+        ),
+      );
       Navigator.pushNamed(context, AppRoutes.login);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -136,247 +148,325 @@ class _RegistrationState extends State<Registration> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF202020),
-      body: Center(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
         child: SingleChildScrollView(
-          child: Container(
-            width: 330,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF252525),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10,
-                  offset: Offset(2, 2),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const Text(
-                    "Create Account",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 25,
-                      color: Colors.white,
-                    ),
+          child: Center(
+            child: Container(
+              width: screenWidth * 0.9,
+              constraints: BoxConstraints(maxWidth: 500),
+              margin: EdgeInsets.all(screenWidth * 0.05),
+              padding: EdgeInsets.all(screenWidth * 0.06),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Profile Image
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: CircleAvatar(
-                      radius: 45,
-                      backgroundColor: Colors.grey.shade800,
-                      backgroundImage:
-                          profileImage != null
-                              ? FileImage(profileImage!)
-                              : null,
-                      child:
-                          profileImage == null
-                              ? const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white70,
-                                size: 30,
-                              )
-                              : null,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Full Name
-                  TextFormField(
-                    controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("Full Name", Icons.person),
-                    validator:
-                        (value) =>
-                            value == null || value.isEmpty
-                                ? "Enter your name"
-                                : null,
-                    onSaved: (value) => name = value,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // School Email
-                  TextFormField(
-                    controller: _schoolEmailController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("School Email", Icons.email),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Enter school email";
-                      }
-                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                        return "Enter a valid email";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => schoolEmail = value,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Other Email
-                  TextFormField(
-                    controller: _otherEmailController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Other Email",
-                      Icons.alternate_email,
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Enter other email";
-                      }
-                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                        return "Enter a valid email";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => otherEmail = value,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Matricule Number
-                  TextFormField(
-                    controller: _matriculeController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Matricule Number",
-                      Icons.badge,
-                    ),
-                    validator:
-                        (value) =>
-                            value == null || value.isEmpty
-                                ? "Enter matricule"
-                                : null,
-                    onSaved: (value) => matricule = value,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Program Field (NEW)
-                  TextFormField(
-                    controller: _programController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("Program", Icons.school),
-                    validator:
-                        (value) =>
-                            value == null || value.isEmpty
-                                ? "Enter your program"
-                                : null,
-                    onSaved: (value) => program = value,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Gender Dropdown
-                  DropdownButtonFormField<String>(
-                    dropdownColor: const Color(0xFF2A2A2A),
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("Select Gender", Icons.people),
-                    value: gender,
-                    items: const [
-                      DropdownMenuItem(value: "M", child: Text("M")),
-                      DropdownMenuItem(value: "F", child: Text("F")),
-                      DropdownMenuItem(value: "Other", child: Text("Other")),
-                    ],
-                    onChanged: (value) => setState(() => gender = value),
-                    validator:
-                        (value) =>
-                            value == null ? "Please choose gender" : null,
-                  ),
-                  const SizedBox(height: 15),
-
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("Phone", Icons.contact_page),
-                    validator: (value) {
-                      if (value == null || value.isEmpty)
-                        return "Enter your contact";
-                      if (!RegExp(r'^\d{8,15}$').hasMatch(value)) {
-                        return "Enter a valid phone number";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => phone = int.tryParse(value ?? ''),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // Password
-                  TextFormField(
-                    controller: _passwordController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration("Password", Icons.lock),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Enter password";
-                      }
-                      if (value.length < 6) {
-                        return "Password must be at least 6 chars";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => password = value,
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Confirm Password
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Confirm Password",
-                      Icons.lock_reset,
-                    ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Confirm your password";
-                      }
-                      if (value != _passwordController.text) {
-                        return "Passwords do not match";
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => confirmPassword = value,
-                  ),
-                  const SizedBox(height: 25),
-
-                  // Register Button
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton(
-                        onPressed: _register,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black.withOpacity(0.25),
-                          side: const BorderSide(color: Colors.black, width: 1),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 100,
-                            vertical: 15,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          "Register",
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
-                      ),
                 ],
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text(
+                      "Create Account",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.08,
+                        color: const Color(0xFF3C3889),
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.03),
+
+                    // Profile Image
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: screenWidth * 0.1,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage:
+                            profileImage != null
+                                ? FileImage(profileImage!)
+                                : null,
+                        child:
+                            profileImage == null
+                                ? Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.grey.shade600,
+                                  size: screenWidth * 0.08,
+                                )
+                                : null,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    Text(
+                      "Tap to add profile photo",
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: screenWidth * 0.035,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.03),
+
+                    // Full Name
+                    TextFormField(
+                      controller: _nameController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Full Name",
+                        Icons.person,
+                        context,
+                      ),
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? "Enter your name"
+                                  : null,
+                      onSaved: (value) => name = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // School Email
+                    TextFormField(
+                      controller: _schoolEmailController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "School Email",
+                        Icons.email,
+                        context,
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Enter school email";
+                        }
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          return "Enter a valid email";
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => schoolEmail = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Other Email
+                    TextFormField(
+                      controller: _otherEmailController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Other Email",
+                        Icons.alternate_email,
+                        context,
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Enter other email";
+                        }
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          return "Enter a valid email";
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => otherEmail = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Matricule Number
+                    TextFormField(
+                      controller: _matriculeController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Matricule Number",
+                        Icons.badge,
+                        context,
+                      ),
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? "Enter matricule"
+                                  : null,
+                      onSaved: (value) => matricule = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Program
+                    TextFormField(
+                      controller: _programController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Program",
+                        Icons.school,
+                        context,
+                      ),
+                      validator:
+                          (value) =>
+                              value == null || value.isEmpty
+                                  ? "Enter your program"
+                                  : null,
+                      onSaved: (value) => program = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Gender Dropdown
+                    DropdownButtonFormField<String>(
+                      dropdownColor: Colors.white,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Select Gender",
+                        Icons.people,
+                        context,
+                      ),
+                      value: gender,
+                      items: const [
+                        DropdownMenuItem(value: "M", child: Text("Male")),
+                        DropdownMenuItem(value: "F", child: Text("Female")),
+                        DropdownMenuItem(value: "Other", child: Text("Other")),
+                      ],
+                      onChanged: (value) => setState(() => gender = value),
+                      validator:
+                          (value) =>
+                              value == null ? "Please choose gender" : null,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Phone
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Phone Number",
+                        Icons.phone,
+                        context,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty)
+                          return "Enter your contact";
+                        if (!RegExp(r'^\d{8,15}$').hasMatch(value)) {
+                          return "Enter a valid phone number";
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => phone = int.tryParse(value ?? ''),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Password
+                    TextFormField(
+                      controller: _passwordController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Password",
+                        Icons.lock,
+                        context,
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Enter password";
+                        }
+                        if (value.length < 6) {
+                          return "Password must be at least 6 characters";
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => password = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+
+                    // Confirm Password
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                      decoration: _inputDecoration(
+                        "Confirm Password",
+                        Icons.lock_reset,
+                        context,
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Confirm your password";
+                        }
+                        if (value != _passwordController.text) {
+                          return "Passwords do not match";
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => confirmPassword = value,
+                    ),
+                    SizedBox(height: screenHeight * 0.04),
+
+                    // Register Button
+                    SizedBox(
+                      width: double.infinity,
+                      child:
+                          _isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                                onPressed: _register,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3C3889),
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: screenHeight * 0.02,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: Text(
+                                  "Register",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                  ],
+                ),
               ),
             ),
           ),

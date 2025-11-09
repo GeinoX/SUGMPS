@@ -5,6 +5,7 @@ import 'package:sugmps/Authentication/login.dart';
 import 'package:sugmps/Authentication/registration.dart';
 import 'package:sugmps/Attendance/Studattpage.dart';
 import 'package:sugmps/Attendance/course_display.dart';
+import 'package:sugmps/core/widgets/main_navigation.dart'; // Add this import
 import 'package:sugmps/pages/homepage.dart';
 import 'package:sugmps/pages/timetable.dart';
 import 'package:sugmps/core/adapters/teacher_course_adapter.dart';
@@ -114,7 +115,9 @@ class MyApp extends StatelessWidget {
             builder = (_) => const Login();
             break;
           case AppRoutes.homepage:
-            builder = (_) => const Homepage();
+            builder =
+                (_) =>
+                    const MainNavigationWrapper(); // ✅ Changed to MainNavigationWrapper
             break;
           case AppRoutes.coursedisplay:
             builder = (_) => const CourseListPage();
@@ -142,7 +145,7 @@ class MyApp extends StatelessWidget {
       case AppRoutes.login:
         return const Login();
       case AppRoutes.homepage:
-        return const Homepage();
+        return const MainNavigationWrapper(); // ✅ Changed to MainNavigationWrapper
       default:
         return const Login();
     }

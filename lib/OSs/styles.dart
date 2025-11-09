@@ -1,23 +1,44 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFFE77B22);
-  static const Color background = Color(0xFF202020);
+  static const Color primary = Color(0xFF3C3889);
+  static const Color secondary = Color(0xFFE77B22);
+  static const Color background = Color(0xFFF8F9FA);
   static const Color whiteWithOpacity60 = Color.fromRGBO(255, 255, 255, 0.6);
   static const Color white = Colors.white;
+  static const Color textPrimary = Color(0xFF333333);
+  static const Color textSecondary = Color(0xFF666666);
 }
 
 class AppSizing {
-  static const double edgeinsets = 20.0;
-  static const double fsb = 60.0;
-  static const double ssb = 50.0;
-  static const double titlefont = 20.0;
-  static const double tsb = 50.0;
-  static const double textfont = 16.0;
-  static const double ftsb = 70.0;
-  static const double buttonradius = 15.0;
-  static const double elevation = 5.0;
-  static const double buttontextfont = 20.0;
+  // Responsive sizing based on screen dimensions
+  static double getEdgeInsets(BuildContext context) {
+    return MediaQuery.of(context).size.width * 0.05;
+  }
+
+  static double getImageHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height * 0.35;
+  }
+
+  static double getImageWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width * 0.7;
+  }
+
+  static double getTitleFontSize(BuildContext context) {
+    return MediaQuery.of(context).size.width * 0.06;
+  }
+
+  static double getTextFontSize(BuildContext context) {
+    return MediaQuery.of(context).size.width * 0.04;
+  }
+
+  static double getButtonFontSize(BuildContext context) {
+    return MediaQuery.of(context).size.width * 0.045;
+  }
+
+  static double getSpacing(BuildContext context, double multiplier) {
+    return MediaQuery.of(context).size.height * (0.01 * multiplier);
+  }
 }
 
 class AppImages {
@@ -48,6 +69,4 @@ class AppText {
   static const String title6 = "Feedback & Surveys";
   static const String text6 =
       "Share your opinions through simple surveys. Help improve learning, campus life, and support systems.";
-
-  static const String title7 = "User";
 }

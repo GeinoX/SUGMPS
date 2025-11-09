@@ -12,9 +12,8 @@ class OS1 extends StatefulWidget {
 
 class _OS1State extends State<OS1> {
   final PageController _pageController = PageController();
-  int _pageIndex = 0; // track current page
+  int _pageIndex = 0;
   bool _imagesPrecached = false;
-  bool _showOnboarding = true; // controls whether to show onboarding
 
   final List<Map<String, String>> _pages = [
     {'image': AppImages.image1, 'title': AppText.title1, 'text': AppText.text1},
@@ -25,20 +24,15 @@ class _OS1State extends State<OS1> {
     {'image': AppImages.image6, 'title': AppText.title6, 'text': AppText.text6},
   ];
 
-
-
   void _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('seenOnboarding', true);
-
-    // Navigate to the next screen
-    Navigator.pushReplacementNamed(context, AppRoutes.usertype);
+    Navigator.pushReplacementNamed(context, AppRoutes.login);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     if (!_imagesPrecached) {
       for (var page in _pages) {
         precacheImage(AssetImage(page['image']!), context);
@@ -58,14 +52,19 @@ class _OS1State extends State<OS1> {
     }
   }
 
+  void _skipOnboarding() {
+    _completeOnboarding();
+  }
+
   Widget _dot(int index) {
     return Container(
-      width: _pageIndex == index ? 12 : 8,
-      height: _pageIndex == index ? 12 : 8,
+      width: _pageIndex == index ? 16 : 8,
+      height: 8,
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: _pageIndex == index ? Colors.blue : Colors.grey.shade400,
+        shape: BoxShape.rectangle,
+        borderRadius: BorderRadius.circular(4),
+        color: _pageIndex == index ? AppColors.primary : Colors.grey.shade300,
       ),
     );
   }
@@ -74,92 +73,147 @@ class _OS1State extends State<OS1> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Skip button (only show if not on last page)
+            if (_pageIndex < _pages.length - 1)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.all(AppSizing.getEdgeInsets(context)),
+                  child: TextButton(
+                    onPressed: _skipOnboarding,
+                    child: Text(
+                      "Skip",
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: AppSizing.getTextFontSize(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (i) => setState(() => _pageIndex = i),
+                itemCount: _pages.length,
+                itemBuilder: (context, index) {
+                  final page = _pages[index];
+                  return _OnboardingPage(
+                    image: page['image']!,
+                    title: page['title']!,
+                    text: page['text']!,
+                  );
+                },
+              ),
+            ),
+
+            // Bottom section with dots and button
+            Container(
+              padding: EdgeInsets.all(AppSizing.getEdgeInsets(context)),
+              child: Column(
+                children: [
+                  // Dots indicator
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [for (int i = 0; i < _pages.length; i++) _dot(i)],
+                  ),
+
+                  SizedBox(height: AppSizing.getSpacing(context, 3)),
+
+                  // Next/Get Started button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _nextPage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          vertical: AppSizing.getSpacing(context, 2),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: Text(
+                        _pageIndex < _pages.length - 1 ? "Next" : "Get Started",
+                        style: TextStyle(
+                          fontSize: AppSizing.getButtonFontSize(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OnboardingPage extends StatelessWidget {
+  final String image;
+  final String title;
+  final String text;
+
+  const _OnboardingPage({
+    required this.image,
+    required this.title,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(AppSizing.getEdgeInsets(context)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (i) => setState(() => _pageIndex = i),
-              itemCount: _pages.length,
-              itemBuilder: (context, index) {
-                final page = _pages[index];
-                return _OS_Super(
-                  image: page['image']!,
-                  title: page['title']!,
-                  text: page['text']!,
-                );
-              },
+          // Image
+          Image.asset(
+            image,
+            height: AppSizing.getImageHeight(context),
+            width: AppSizing.getImageWidth(context),
+            fit: BoxFit.contain,
+          ),
+
+          SizedBox(height: AppSizing.getSpacing(context, 4)),
+
+          // Title
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: AppSizing.getTitleFontSize(context),
             ),
           ),
-          // Dots + Next button
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [for (int i = 0; i < _pages.length; i++) _dot(i)],
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _nextPage,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _pageIndex < _pages.length - 1 ? "Next" : "Get Started",
-                    style: const TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-              ],
+
+          SizedBox(height: AppSizing.getSpacing(context, 2)),
+
+          // Description
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.normal,
+              fontSize: AppSizing.getTextFontSize(context),
+              height: 1.5,
             ),
           ),
         ],
       ),
     );
   }
-}
-
-Widget _OS_Super({
-  required String image,
-  required String title,
-  required String text,
-}) {
-  return Padding(
-    padding: const EdgeInsets.all(AppSizing.edgeinsets),
-    child: Column(
-      children: [
-        const SizedBox(height: AppSizing.fsb),
-        Image.asset(image, height: 350, width: 300),
-        const SizedBox(height: AppSizing.ssb),
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 19,
-          ),
-        ),
-        const SizedBox(height: AppSizing.tsb),
-        Text(
-          text,
-          style: TextStyle(
-            color: AppColors.whiteWithOpacity60,
-            fontWeight: FontWeight.normal,
-            fontSize: AppSizing.textfont,
-          ),
-        ),
-      ],
-    ),
-  );
 }

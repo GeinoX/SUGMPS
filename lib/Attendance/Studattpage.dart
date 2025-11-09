@@ -2,9 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugmps/OSs/styles.dart';
 import 'package:sugmps/core/routes/routes.dart';
-import 'attpage2.dart'; // 👈 ensure this import is correct
+import 'attpage2.dart';
 
 class StudentAttendancePage extends StatefulWidget {
   final String courseId;
@@ -125,10 +124,12 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF8F9FA), // Matching homepage background
       appBar: AppBar(
         title: Text(widget.courseName),
-        backgroundColor: AppColors.primary,
+        backgroundColor: const Color(
+          0xFF3C3889,
+        ), // Matching homepage primary color
         elevation: 0,
       ),
       body: RefreshIndicator(
@@ -267,51 +268,62 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
                                     ],
                                   ),
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            "Day ${dayData['day']}",
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
+                                      // Status icon at the beginning
+                                      _getStatusIcon(dayData['status']),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "Day ${dayData['day']}",
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                if (dayData['session_id'] !=
+                                                        null &&
+                                                    dayData['session_id']
+                                                        .isNotEmpty)
+                                                  Text(
+                                                    "Session: ${dayData['session_id'].toString().substring(0, 8)}...",
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
-                                          ),
-                                          if (dayData['session_id'] != null &&
-                                              dayData['session_id'].isNotEmpty)
-                                            Text(
-                                              "Session: ${dayData['session_id'].toString().substring(0, 8)}...",
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey,
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: _getStatusColor(
+                                                  dayData['status'],
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                dayData['status'],
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                        ],
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _getStatusColor(
-                                            dayData['status'],
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          dayData['status'],
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -331,7 +343,9 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
         onPressed: _openScanPage,
         label: const Text("Scan Attendance"),
         icon: const Icon(Icons.qr_code_scanner),
-        backgroundColor: AppColors.primary,
+        backgroundColor: const Color(
+          0xFF3C3889,
+        ), // Matching homepage primary color
       ),
     );
   }
@@ -346,6 +360,19 @@ class _StudentAttendancePageState extends State<StudentAttendancePage> {
         return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  Widget _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'attended':
+        return Icon(Icons.check_circle, color: Colors.green, size: 24);
+      case 'justified':
+        return Icon(Icons.warning_amber, color: Colors.orange, size: 24);
+      case 'missed':
+        return Icon(Icons.cancel, color: Colors.red, size: 24);
+      default:
+        return Icon(Icons.help_outline, color: Colors.grey, size: 24);
     }
   }
 
