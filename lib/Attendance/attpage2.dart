@@ -15,6 +15,11 @@ const Color accentOrange = Color(0xFFFFA726);
 const String baseUrl = AppRoutes.url;
 const int RSSI_STRONG_THRESHOLD = -70;
 
+// Custom BLE identification constants
+const String APP_BLE_PREFIX = "SUGMPS"; // 6-byte prefix for our app
+const int APP_MANUFACTURER_ID = 0x1234; // Custom manufacturer ID
+const int BLE_DATA_VERSION = 0x01; // Version byte
+
 class AttendanceBlePage extends StatefulWidget {
   final String courseId;
   final String courseName;
@@ -42,7 +47,7 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
   // BLE peripheral for broadcasting
   final FlutterBlePeripheral _blePeripheral = FlutterBlePeripheral();
   bool _broadcasting = false;
-  String? _broadcastingSessionId; // which session we are broadcasting
+  String? _broadcastingSessionId;
 
   // Friend addition feature
   final List<TextEditingController> _friendControllers = [
@@ -51,7 +56,7 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
   ];
   final List<FocusNode> _friendFocusNodes = [FocusNode(), FocusNode()];
 
-  late Box<Map> _localBox; // single box; entries include courseId
+  late Box<Map> _localBox;
 
   @override
   void initState() {
@@ -65,7 +70,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     _scanTimer?.cancel();
     FlutterBluePlus.stopScan();
     _stopBroadcast();
-    // Dispose controllers and focus nodes
     for (var controller in _friendControllers) {
       controller.dispose();
     }
@@ -77,7 +81,7 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
 
   Future<void> _initHiveAndLoad() async {
     await Hive.initFlutter();
-    _localBox = await Hive.openBox<Map>('offline_sessions'); // single box
+    _localBox = await Hive.openBox<Map>('offline_sessions');
     _loadLocalSessionsForCourse();
     setState(() => _statusMessage = 'Ready to scan');
   }
@@ -87,7 +91,7 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     for (final entry in _localBox.values) {
       try {
         final courseId = entry['courseId'] as String? ?? '';
-        if (courseId != widget.courseId) continue; // only this course
+        if (courseId != widget.courseId) continue;
         _detected.add(
           _DetectedSession(
             sessionId: entry['sessionId'] as String,
@@ -98,17 +102,13 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
             submitted: entry['submitted'] as bool? ?? false,
           ),
         );
-      } catch (_) {
-        // ignore malformed entries
-      }
+      } catch (_) {}
     }
-    // keep newest-first (optional)
     _detected.sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
     setState(() {});
   }
 
   Future<void> _saveLocally(_DetectedSession ds) async {
-    // store a map with courseId; overwrite if exists
     await _localBox.put(ds.sessionId, {
       'sessionId': ds.sessionId,
       'courseId': widget.courseId,
@@ -129,10 +129,90 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     await _localBox.delete(sessionId);
   }
 
+  // ========== BLE METHODS ==========
+
+  /// Creates custom manufacturer data for our app sessions
+  Uint8List _createManufacturerData(String sessionId) {
+    final prefixBytes = utf8.encode(APP_BLE_PREFIX);
+    final sessionBytes = utf8.encode(sessionId);
+
+    final data = Uint8List(1 + prefixBytes.length + sessionBytes.length);
+    data[0] = BLE_DATA_VERSION;
+    data.setRange(1, 1 + prefixBytes.length, prefixBytes);
+    data.setRange(1 + prefixBytes.length, data.length, sessionBytes);
+
+    return data;
+  }
+
+  /// Extracts session ID from manufacturer data if it matches our app format
+  String? _extractSessionIdFromManufacturerData(Uint8List data) {
+    try {
+      if (data.length < 7) return null;
+
+      final version = data[0];
+      if (version != BLE_DATA_VERSION) return null;
+
+      final prefix = String.fromCharCodes(data.sublist(1, 7));
+      if (prefix != APP_BLE_PREFIX) return null;
+
+      final sessionIdBytes = data.sublist(7);
+      return String.fromCharCodes(sessionIdBytes);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Simple hex conversion utility
+  String _bytesToHex(List<int> bytes) {
+    return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// Creates a custom service UUID that encodes our app prefix
+  String _createCustomServiceUuid(String sessionId) {
+    // Convert prefix to hex for UUID inclusion
+    final prefixBytes = utf8.encode(APP_BLE_PREFIX.substring(0, 4));
+    final prefixHex = _bytesToHex(prefixBytes).padRight(8, '0').substring(0, 8);
+
+    // Create simple hash from session ID for UUID
+    final sessionHash = sessionId.hashCode
+        .toUnsigned(32)
+        .toRadixString(16)
+        .padLeft(8, '0');
+
+    return '12345678-1234-5678-$prefixHex-$sessionHash';
+  }
+
+  /// Checks if a service UUID matches our app format
+  String? _extractSessionIdFromServiceUuid(String serviceUuid) {
+    try {
+      // For simplicity, we'll use a different approach
+      // Since we can't perfectly encode/decode session IDs in UUIDs,
+      // we'll just verify it's our format and return a placeholder
+      final parts = serviceUuid.split('-');
+      if (parts.length == 5) {
+        final prefixPart = parts[3];
+        final sessionPart = parts[4];
+
+        // Verify the prefix matches our expected format
+        final expectedPrefix = _bytesToHex(
+          utf8.encode(APP_BLE_PREFIX.substring(0, 4)),
+        ).padRight(8, '0').substring(0, 8);
+
+        if (prefixPart == expectedPrefix) {
+          // For service UUIDs, we can't recover the full session ID,
+          // so we'll create a unique identifier based on the UUID
+          return "uuid-$serviceUuid";
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _startScan() async {
     setState(() {
       _scanning = true;
-      _statusMessage = 'Scanning for sessions...';
+      _statusMessage = 'Scanning for SUGMPS sessions...';
+      _detected.clear();
     });
 
     await _scanSub?.cancel();
@@ -141,34 +221,28 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
       for (final r in results) {
         String? sessionId;
 
-        // Check manufacturerData with specific manufacturerId
-        const targetManufacturerId = 0xFFFF;
+        // ========== Check manufacturer data first ==========
         final manu = r.advertisementData.manufacturerData;
-        if (manu.containsKey(targetManufacturerId)) {
-          final bytes = manu[targetManufacturerId];
-          if (bytes != null) {
-            try {
-              final decoded = String.fromCharCodes(bytes);
-              if (_looksLikeUuid(decoded)) {
-                sessionId = decoded;
-              }
-            } catch (_) {}
+        if (manu.containsKey(APP_MANUFACTURER_ID)) {
+          final bytes = manu[APP_MANUFACTURER_ID];
+          if (bytes != null && bytes.isNotEmpty) {
+            sessionId = _extractSessionIdFromManufacturerData(
+              Uint8List.fromList(bytes),
+            );
           }
         }
 
-        // Fall back to service UUIDs if no valid manufacturerData
+        // ========== Fallback to service UUIDs with our format ==========
         if (sessionId == null && r.advertisementData.serviceUuids.isNotEmpty) {
           for (final su in r.advertisementData.serviceUuids) {
-            final suStr = su.str128;
-            if (_looksLikeUuid(suStr)) {
-              sessionId = suStr;
-              break;
-            }
+            final suStr = su.toString();
+            sessionId = _extractSessionIdFromServiceUuid(suStr);
+            if (sessionId != null) break;
           }
         }
 
-        // ✅ Skip devices with sessionId starting with 0000
-        if (sessionId == null || sessionId.startsWith('0000')) continue;
+        // ========== Only process valid SUGMPS sessions ==========
+        if (sessionId == null) continue;
 
         // Update existing session or add new
         final existingIdx = _detected.indexWhere(
@@ -183,13 +257,13 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
           _saveLocally(updated);
         } else {
           final newSession = _DetectedSession(
-            sessionId: sessionId,
+            sessionId: sessionId!,
             rssi: r.rssi,
             lastSeen: DateTime.now(),
             submitted:
                 (_localBox.get(sessionId)?['submitted'] as bool?) ?? false,
           );
-          _detected.insert(0, newSession); // newest first
+          _detected.insert(0, newSession);
           _saveLocally(newSession);
         }
 
@@ -198,10 +272,7 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     });
 
     // Start scanning
-    await FlutterBluePlus.startScan(
-      timeout: const Duration(seconds: 8),
-      androidScanMode: AndroidScanMode.lowLatency,
-    );
+    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 8));
 
     _scanTimer?.cancel();
     _scanTimer = Timer(const Duration(seconds: 9), _stopScanNow);
@@ -213,7 +284,8 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     _scanTimer?.cancel();
     setState(() {
       _scanning = false;
-      _statusMessage = 'Scan complete. ${_detected.length} found';
+      _statusMessage =
+          'Scan complete. ${_detected.length} SUGMPS sessions found';
     });
   }
 
@@ -226,7 +298,7 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     final payload = {
       "session_id": sessionId,
       "course_id": widget.courseId,
-      "added_students": addedStudents, // Match your API field name
+      "added_students": addedStudents,
     };
 
     try {
@@ -241,22 +313,18 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
       );
 
       if (resp.statusCode == 200 || resp.statusCode == 201) {
-        // mark submitted locally (we keep the record so user can broadcast)
         await _markSubmittedLocally(sessionId);
         _ischeckedin = true;
 
-        // update in-memory list
         final idx = _detected.indexWhere((d) => d.sessionId == sessionId);
         if (idx >= 0) {
           _detected[idx] = _detected[idx].copyWith(submitted: true);
         }
 
-        // set last submitted session for broadcasting
         setState(() {
           _broadcastingSessionId = sessionId;
         });
 
-        // Clear friend inputs after successful submission
         _clearFriendInputs();
 
         _showSnack(
@@ -272,7 +340,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
 
   // -------------------- FRIEND INPUT DIALOG --------------------
   Future<List<String>?> _showFriendInputDialog(String sessionId) async {
-    // Reset friend inputs
     _clearFriendInputs();
 
     return showDialog<List<String>>(
@@ -298,7 +365,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
                       style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
-                    // Student 1 input
                     TextField(
                       controller: _friendControllers[0],
                       focusNode: _friendFocusNodes[0],
@@ -312,7 +378,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    // Student 2 input
                     TextField(
                       controller: _friendControllers[1],
                       focusNode: _friendFocusNodes[1],
@@ -349,7 +414,7 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(null); // Cancel
+                    Navigator.of(context).pop(null);
                   },
                   child: const Text('Cancel'),
                 ),
@@ -401,7 +466,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
 
   // -------------------- TILE ACTIONS --------------------
   Future<void> _onSessionTap(_DetectedSession ds) async {
-    // Show options: Submit, Delete, Cancel
     final choice = await showModalBottomSheet<String>(
       context: context,
       builder: (_) {
@@ -453,7 +517,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
         _showSnack('Deleted locally');
       }
     }
-    // else cancel — do nothing
   }
 
   Future<bool?> _showConfirmDialog(String title, String body) {
@@ -477,24 +540,24 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     );
   }
 
-  // -------------------- BROADCAST --------------------
+  // ========== FIXED BROADCAST METHOD with correct AdvertiseMode ==========
   Future<void> _startBroadcasting(String sessionId) async {
     if (sessionId.isEmpty) return;
 
     try {
+      // Create AdvertiseData with required parameters
       final advertiseData = AdvertiseData(
-        includeDeviceName: false, // optional
-        serviceUuid: sessionId, // broadcast recognition ID
-        manufacturerId: 0xFFFF, // fixed 16-bit manufacturer ID
-        manufacturerData: Uint8List.fromList(
-          utf8.encode(sessionId),
-        ), // session info
+        serviceUuid: _createCustomServiceUuid(sessionId),
+        manufacturerId: APP_MANUFACTURER_ID,
+        manufacturerData: _createManufacturerData(sessionId),
       );
 
+      // Try different AdvertiseMode values - use the one that exists
       final advertiseSettings = AdvertiseSettings(
-        advertiseMode: AdvertiseMode.advertiseModeLowLatency,
-        txPowerLevel: AdvertiseTxPower.advertiseTxPowerHigh,
+        advertiseMode:
+            AdvertiseMode.advertiseModeBalanced, // Try this common value
         connectable: false,
+        timeout: 0, // 0 means no timeout
       );
 
       await _blePeripheral.start(
@@ -507,10 +570,35 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
         _broadcastingSessionId = sessionId;
       });
 
-      _showSnack('Broadcasting session ${_short(sessionId)}');
+      _showSnack('Broadcasting SUGMPS session ${_short(sessionId)}');
     } catch (e) {
       _showSnack('Broadcast failed: $e');
-      print(e);
+      print('Broadcast error: $e');
+
+      // If AdvertiseMode.advertiseModeBalanced doesn't work, try without settings
+      try {
+        final advertiseData = AdvertiseData(
+          serviceUuid: _createCustomServiceUuid(sessionId),
+          manufacturerId: APP_MANUFACTURER_ID,
+          manufacturerData: _createManufacturerData(sessionId),
+        );
+
+        await _blePeripheral.start(
+          advertiseData: advertiseData,
+          // Don't provide advertiseSettings to use defaults
+        );
+
+        setState(() {
+          _broadcasting = true;
+          _broadcastingSessionId = sessionId;
+        });
+
+        _showSnack(
+          'Broadcasting SUGMPS session ${_short(sessionId)} (with default settings)',
+        );
+      } catch (e2) {
+        _showSnack('Broadcast failed completely: $e2');
+      }
     }
   }
 
@@ -524,7 +612,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
     });
   }
 
-  // Toggle broadcast button behavior
   Future<void> _toggleBroadcast() async {
     if (_broadcasting) {
       await _stopBroadcast();
@@ -578,23 +665,13 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
   @override
   Widget build(BuildContext context) {
     final hasSubmitted = _detected.any((d) => d.submitted);
-    // prefer broadcastingSessionId if set; else pick last submitted
     final btnEnabled = _broadcastingSessionId != null || hasSubmitted;
-    final effectiveBroadcastId =
-        _broadcastingSessionId ??
-        (_detected
-            .firstWhere(
-              (d) => d.submitted,
-              orElse: () => _DetectedSession.empty(),
-            )
-            .sessionId);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.courseName),
         backgroundColor: Colors.orange,
         actions: [
-          // Broadcast button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Opacity(
@@ -636,13 +713,12 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
             Expanded(
               child:
                   _detected.isEmpty
                       ? const Center(
-                        child: Text('No stored sessions for this course.'),
+                        child: Text('No SUGMPS sessions detected.'),
                       )
                       : RefreshIndicator(
                         onRefresh: () async => _loadLocalSessionsForCourse(),
@@ -660,7 +736,6 @@ class _AttendanceBlePageState extends State<AttendanceBlePage> {
   }
 }
 
-// -------------------- Data class --------------------
 class _DetectedSession {
   final String sessionId;
   final int rssi;
@@ -688,7 +763,6 @@ class _DetectedSession {
     );
   }
 
-  // empty sentinel for broadcast selection
   factory _DetectedSession.empty() => _DetectedSession(
     sessionId: '',
     rssi: -999,

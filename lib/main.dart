@@ -119,9 +119,7 @@ class MyApp extends StatelessWidget {
                 (_) =>
                     const MainNavigationWrapper(); // ✅ Changed to MainNavigationWrapper
             break;
-          case AppRoutes.coursedisplay:
-            builder = (_) => const CourseListPage();
-            break;
+         
           case AppRoutes.timetablepage:
             builder = (_) => const TimetablePage();
             break;
