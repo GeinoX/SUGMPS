@@ -1,9 +1,9 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:hive/hive.dart';
-import 'package:sugmps/utils/attendancetemp_adapter.dart';
+import 'package:sugmps/core/adapters/attendancetemp_adapter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/core/routes/routes.dart';
 
 class ApiService {
   static const String baseUrl = "${AppRoutes.url}/umsapp/courses/";

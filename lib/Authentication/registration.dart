@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:sugmps/routes.dart';
-import '../../services/auth_service.dart';
+import 'package:sugmps/core/routes/routes.dart';
+import '../services/auth_service.dart';
 import 'package:flutter/services.dart';
 
 class Registration extends StatefulWidget {

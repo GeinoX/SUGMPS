@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/core/routes/routes.dart';
 
 class TimetablePage extends StatefulWidget {
   const TimetablePage({super.key});

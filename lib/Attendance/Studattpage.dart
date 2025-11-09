@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sugmps/OSs/styles.dart';
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/core/routes/routes.dart';
 import 'attpage2.dart'; // 👈 ensure this import is correct
 
 class StudentAttendancePage extends StatefulWidget {

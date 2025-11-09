@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugmps/routes.dart';
-import '../../services/auth_service.dart';
+import 'package:sugmps/core/routes/routes.dart';
+import '../services/auth_service.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});

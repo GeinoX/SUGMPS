@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/core/routes/routes.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 

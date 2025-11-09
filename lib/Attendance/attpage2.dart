@@ -8,7 +8,7 @@ import 'package:flutter_ble_peripheral/flutter_ble_peripheral.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/core/routes/routes.dart';
 
 const Color primaryBlue = Color(0xFF1565C0);
 const Color accentOrange = Color(0xFFFFA726);

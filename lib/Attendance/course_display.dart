@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugmps/utils/course_adapter.dart';
+import 'package:sugmps/core/adapters/course_adapter.dart';
 import 'package:sugmps/services/course_service.dart';
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/core/routes/routes.dart';
 import 'attpage2.dart'; // Attendance page
 
 class CourseListPage extends StatefulWidget {

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hive/hive.dart';
-import 'package:sugmps/utils/course_adapter.dart';
+import 'package:sugmps/core/adapters/course_adapter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/core/routes/routes.dart';
 
 class CourseService {
   final String baseUrl;

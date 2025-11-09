@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:sugmps/Student/MSs/Attendance/Studattpage.dart';
-import 'package:sugmps/routes.dart';
+import 'package:sugmps/Attendance/Studattpage.dart';
+import 'package:sugmps/core/routes/routes.dart';
 import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
@@ -10,9 +10,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:sugmps/utils/course_adapter.dart';
+import 'package:sugmps/core/adapters/course_adapter.dart';
 import 'package:sugmps/services/course_service.dart';
-import 'package:sugmps/Student/MSs/Attendance/attpage2.dart';
+import 'package:sugmps/Attendance/attpage2.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});

@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugmps/Student/Authen/login.dart';
-import 'package:sugmps/Student/Authen/registration.dart';
-import 'package:sugmps/Student/MSs/Attendance/Studattpage.dart';
-import 'package:sugmps/Student/MSs/Attendance/course_display.dart';
-import 'package:sugmps/Student/MSs/Courses/course_page.dart';
-import 'package:sugmps/Student/MSs/homepage.dart';
-import 'package:sugmps/Student/MSs/notifications/bulletin.dart';
-import 'package:sugmps/Student/MSs/timetable.dart';
-import 'package:sugmps/usertype.dart';
-import 'package:sugmps/utils/teacher_course_adapter.dart';
-import 'routes.dart';
+import 'package:sugmps/Authentication/login.dart';
+import 'package:sugmps/Authentication/registration.dart';
+import 'package:sugmps/Attendance/Studattpage.dart';
+import 'package:sugmps/Attendance/course_display.dart';
+import 'package:sugmps/pages/homepage.dart';
+import 'package:sugmps/pages/timetable.dart';
+import 'package:sugmps/core/adapters/teacher_course_adapter.dart';
+import 'core/routes/routes.dart';
 import 'OSs/styles.dart';
 import 'OSs/os1.dart';
 import 'services/auth_service.dart';
-import 'utils/jwt_helper.dart';
+import 'core/utils/jwt_helper.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:sugmps/utils/course_adapter.dart';
-import 'package:sugmps/utils/attendancetemp_adapter.dart';
-import 'package:sugmps/utils/notification_adapter.dart';
+import 'package:sugmps/core/adapters/course_adapter.dart';
+import 'package:sugmps/core/adapters/attendancetemp_adapter.dart';
+import 'package:sugmps/core/adapters/notification_adapter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,9 +107,6 @@ class MyApp extends StatelessWidget {
           case AppRoutes.os1:
             builder = (_) => const OS1();
             break;
-          case AppRoutes.usertype:
-            builder = (_) => const UserType();
-            break;
           case AppRoutes.registration:
             builder = (_) => const Registration();
             break;
@@ -122,14 +116,8 @@ class MyApp extends StatelessWidget {
           case AppRoutes.homepage:
             builder = (_) => const Homepage();
             break;
-          case AppRoutes.coursepage:
-            builder = (_) => const Coursepage();
-            break;
           case AppRoutes.coursedisplay:
             builder = (_) => const CourseListPage();
-            break;
-          case AppRoutes.notifications:
-            builder = (_) => const NotificationsPage();
             break;
           case AppRoutes.timetablepage:
             builder = (_) => const TimetablePage();
