@@ -8,51 +8,58 @@ class AuthService {
 
   AuthService({required this.baseUrl});
 
-  /// Registers a user
   Future<Map<String, dynamic>> register({
     required String name,
     required String schoolEmail,
     required String otherEmail,
-    required String matricule,
     required int phone,
+    required String matricule,
     required String password,
     required String gender,
-    required String program, // NEW
-    required File profileImage, // make it required
+    required String program,
+    required File profileImage,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/umsapp/students/register/');
-
-      // Always use multipart since image is compulsory
-      var request = http.MultipartRequest('POST', uri);
-
-      request.fields['name'] = name;
-      request.fields['school_email'] = schoolEmail;
-      request.fields['email'] = otherEmail;
-      request.fields['matricule'] = matricule;
-      request.fields['phone'] = phone.toString();
-      request.fields['password'] = password;
-      request.fields['gender'] = gender;
-      request.fields['program'] = program; // NEW
-
-      request.files.add(
-        await http.MultipartFile.fromPath('profile_image', profileImage.path),
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/umsapp/students/register/'),
       );
 
-      var streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+      // Add fields
+      request.fields['name'] = name;
+      request.fields['school_email'] = schoolEmail;
+      request.fields['other_email'] = otherEmail;
+      request.fields['phone'] = phone.toString();
+      request.fields['matricule'] = matricule;
+      request.fields['password'] = password;
+      request.fields['gender'] = gender;
+      request.fields['program'] = program;
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return json.decode(response.body);
-      } else {
-        throw HttpException(
-          'Failed to register. Status code: ${response.statusCode}, body: ${response.body}',
+      // Add image file
+      if (profileImage.path.isNotEmpty && await profileImage.exists()) {
+        var imageFile = await http.MultipartFile.fromPath(
+          'profile_image',
+          profileImage.path,
+          filename: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
+        request.files.add(imageFile);
+      }
+
+      var response = await request.send();
+      var responseString = await response.stream.bytesToString();
+
+      print('🎯 Registration Response: $responseString');
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final responseData = jsonDecode(responseString);
+        print('✅ Registration successful!');
+        return responseData;
+      } else {
+        final errorData = jsonDecode(responseString);
+        throw Exception(errorData['message'] ?? 'Registration failed');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error in AuthService.register: $e');
-      }
+      print('❌ Registration error: $e');
       rethrow;
     }
   }

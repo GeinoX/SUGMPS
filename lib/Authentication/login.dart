@@ -15,6 +15,7 @@ class _LoginState extends State<Login> {
   final TextEditingController _matriculeController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true; // Add this variable
 
   String? matricule;
   String? password;
@@ -29,8 +30,9 @@ class _LoginState extends State<Login> {
   InputDecoration _inputDecoration(
     String label,
     IconData icon,
-    BuildContext context,
-  ) {
+    BuildContext context, {
+    Widget? suffixIcon, // Add suffixIcon parameter
+  }) {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(
@@ -42,6 +44,7 @@ class _LoginState extends State<Login> {
         color: const Color(0xFF3C3889),
         size: MediaQuery.of(context).size.width * 0.06,
       ),
+      suffixIcon: suffixIcon, // Add suffix icon
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.grey.shade400),
         borderRadius: BorderRadius.circular(12),
@@ -90,6 +93,13 @@ class _LoginState extends State<Login> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // Toggle password visibility
+  void _togglePasswordVisibility() {
+    setState(() {
+      _obscurePassword = !_obscurePassword;
+    });
   }
 
   @override
@@ -163,7 +173,7 @@ class _LoginState extends State<Login> {
                     ),
                     SizedBox(height: screenHeight * 0.02),
 
-                    // Password input
+                    // Password input with visibility toggle
                     TextFormField(
                       controller: _passwordController,
                       style: TextStyle(
@@ -174,8 +184,20 @@ class _LoginState extends State<Login> {
                         "Password",
                         Icons.lock,
                         context,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: const Color(0xFF3C3889),
+                            size: screenWidth * 0.06,
+                          ),
+                          onPressed: _togglePasswordVisibility,
+                          splashRadius: 20, // Better touch feedback
+                          padding: EdgeInsets.zero, // Remove extra padding
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return "Enter password";

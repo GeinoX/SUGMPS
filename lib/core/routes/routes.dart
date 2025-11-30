@@ -18,8 +18,7 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String teachercoursespage = '/teachercoursespage';
   static const String timetablepage = 'timetablepage';
-  static const String url = 'https://d5e65c1f4222.ngrok-free.app';
-  static const String socketurl = 'ca2789c00d84.ngrok-free.app';
+  static const String url = 'https://sugmps-backend-production.up.railway.app';
   static const String studattpage = 'studattpage';
 
 }
