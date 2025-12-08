@@ -1,6 +1,7 @@
 import '../models/course_model.dart';
 import '../models/semester_model.dart';
 import '../models/user_model.dart';
+import '../models/addenrollment_model.dart';
 
 abstract class EnrollmentRemoteDatasource {
   Future<List<CourseModel>> getEnrollments();
@@ -16,4 +17,8 @@ abstract class UserRemoteDataSource {
 
 abstract class CourseDataSource {
   Future<List<CourseModel>> fetchCourses();
+}
+
+abstract class AddenrollmentDataSource {
+  Future<List<AddenrollmentModel>> addEnrollment();
 }
