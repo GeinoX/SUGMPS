@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'styles.dart';
-import 'package:sugmps/core/routes/routes.dart';
 
 class OS1 extends StatefulWidget {
   const OS1({super.key});
@@ -27,7 +26,7 @@ class _OS1State extends State<OS1> {
   void _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('seenOnboarding', true);
-    Navigator.pushReplacementNamed(context, AppRoutes.login);
+    Navigator.pushReplacementNamed(context, "");
   }
 
   @override

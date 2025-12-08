@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sugmps/core/routes/routes.dart';
 import 'styles.dart';
 
 class OS6 extends StatefulWidget {
@@ -22,7 +21,7 @@ class _OS6State extends State<OS6> {
   }
 
   void _navigateToLogin() {
-    Navigator.pushReplacementNamed(context, AppRoutes.login);
+    Navigator.pushReplacementNamed(context, "");
   }
 
   @override
