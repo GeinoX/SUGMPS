@@ -51,7 +51,7 @@ class AppImages {
 }
 
 class AppText {
-  static const String title1 = "Track Your Academic Performance";
+  static const String title1 = "Track Your Aademic Performance";
   static const String text1 =
       "View your grades, monitor your GPA & CGPA in real-time, and get insights to help you stay on top of your academic journey.";
   static const String title2 = "Organize Your Schedule";
