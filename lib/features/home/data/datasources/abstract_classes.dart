@@ -3,6 +3,8 @@ import '../models/semester_model.dart';
 import '../models/user_model.dart';
 import '../models/addenrollment_model.dart';
 import '../models/attendance_info_models.dart';
+import '../models/attendance_details_models.dart';
+
 
 abstract class EnrollmentRemoteDatasource {
   Future<List<CourseModel>> getEnrollments();
@@ -26,4 +28,8 @@ abstract class AddenrollmentDataSource {
 
 abstract class AttendanceInfoDataSource {
   Future<List<AttendanceInfoModels>> fetchAttendanceInfo();
+}
+
+abstract class AttendanceDetailsDataSource {
+  Future<List<AttendanceDetailsModels>> fetchAttendanceDetails();
 }

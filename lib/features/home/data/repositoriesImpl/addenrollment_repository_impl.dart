@@ -1,6 +1,6 @@
 import '../../domain/repositories/addenrollment_repository.dart';
 import '../datasources/abstract_classes.dart';
-import '../models/addenrollment_model.dart';
+import '../../domain/entities/addenrollment.dart';
 
 class AddenrollmentRepositoryImpl implements AddenrollmentRepository {
   final AddenrollmentDataSource dataSource;
@@ -8,7 +8,7 @@ class AddenrollmentRepositoryImpl implements AddenrollmentRepository {
   AddenrollmentRepositoryImpl({required this.dataSource});
 
   @override
-  Future<List<AddenrollmentModel>> addEnrollment() async {
+  Future<List<Addenrollment>> addEnrollment() async {
     final data = await dataSource.addEnrollment();
     return data;
   }
